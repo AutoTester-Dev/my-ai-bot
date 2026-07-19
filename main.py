@@ -10,10 +10,7 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 def get_gemini_response(prompt):
-    # API kaliti mavjudligini tekshirish
-    if not GEMINI_API_KEY:
-        return "Xatolik: GEMINI_API_KEY sozlanmagan."
-
+    # Model nomi to'g'ri formatda (v1beta/models/gemini-1.5-flash)
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": str(prompt)}]}]}
@@ -23,7 +20,7 @@ def get_gemini_response(prompt):
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text']
         else:
-            return f"API Xatosi: {response.status_code} - {response.text}"
+            return f"API Xatosi ({response.status_code}): {response.text}"
     except Exception as e:
         return f"Dasturiy xato: {str(e)}"
 
@@ -38,15 +35,11 @@ def download_music_by_query(query):
         ydl.download([query])
     return 'music.mp3'
 
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
-    bot.reply_to(message, "Salom! Men AI botman. Savollaringizni yozing yoki /mp3 [qo'shiq nomi] yuboring.")
-
 @bot.message_handler(commands=['mp3'])
 def handle_mp3(message):
     query = message.text.replace('/mp3', '').strip()
     if not query:
-        bot.reply_to(message, "Iltimos, qo'shiq nomini yozing. Masalan: /mp3 Ummon")
+        bot.reply_to(message, "Qo'shiq nomini yozing. Masalan: /mp3 Ummon")
         return
     msg = bot.reply_to(message, "🔍 Qidirilmoqda...")
     try:
@@ -56,7 +49,7 @@ def handle_mp3(message):
         os.remove(file_path)
         bot.delete_message(message.chat.id, msg.message_id)
     except Exception as e:
-        bot.edit_message_text(f"❌ Xatolik yuz berdi: {str(e)}", message.chat.id, msg.message_id)
+        bot.edit_message_text(f"❌ Yuklashda xatolik: {str(e)}", message.chat.id, msg.message_id)
 
 @bot.message_handler(func=lambda message: True)
 def handle_ai(message):
