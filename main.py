@@ -3,15 +3,32 @@ import telebot
 import yt_dlp
 import requests
 
-# Railway'dan o'zgaruvchilarni o'qiydi
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
+def get_available_model():
+    """API kaliti orqali mavjud bo'lgan birinchi modelni topadi."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={GEMINI_API_KEY}"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            models = response.json().get('models', [])
+            # 'generateContent' qobiliyatiga ega bo'lgan birinchi modelni tanlaymiz
+            for model in models:
+                if 'generateContent' in model.get('supportedMethodNames', []):
+                    return model['name']
+        return "gemini-1.5-flash" # Agar topilmasa, default
+    except:
+        return "gemini-1.5-flash"
+
+# Bot ishga tushganda modelni aniqlaymiz
+ACTIVE_MODEL = get_available_model()
+print(f"Tanlangan model: {ACTIVE_MODEL}")
+
 def get_gemini_response(prompt):
-    # Model nomi to'g'ri formatda (v1beta/models/gemini-1.5-flash)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{ACTIVE_MODEL}:generateContent?key={GEMINI_API_KEY}"
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": str(prompt)}]}]}
     
@@ -23,6 +40,8 @@ def get_gemini_response(prompt):
             return f"API Xatosi ({response.status_code}): {response.text}"
     except Exception as e:
         return f"Dasturiy xato: {str(e)}"
+
+# ... [download_music_by_query va qolgan qismlar avvalgidek] ...
 
 def download_music_by_query(query):
     ydl_opts = {
