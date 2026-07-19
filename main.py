@@ -10,17 +10,22 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 def get_gemini_response(prompt):
+    # API kaliti mavjudligini tekshirish
+    if not GEMINI_API_KEY:
+        return "Xatolik: GEMINI_API_KEY sozlanmagan."
+
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {'Content-Type': 'application/json'}
-    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    data = {"contents": [{"parts": [{"text": str(prompt)}]}]}
+    
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text']
         else:
-            return f"API Xatosi: {response.status_code}"
+            return f"API Xatosi: {response.status_code} - {response.text}"
     except Exception as e:
-        return f"AI xatosi: {str(e)}"
+        return f"Dasturiy xato: {str(e)}"
 
 def download_music_by_query(query):
     ydl_opts = {
@@ -33,11 +38,15 @@ def download_music_by_query(query):
         ydl.download([query])
     return 'music.mp3'
 
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+    bot.reply_to(message, "Salom! Men AI botman. Savollaringizni yozing yoki /mp3 [qo'shiq nomi] yuboring.")
+
 @bot.message_handler(commands=['mp3'])
 def handle_mp3(message):
     query = message.text.replace('/mp3', '').strip()
     if not query:
-        bot.reply_to(message, "Qo'shiq nomini yozing. Masalan: /mp3 xurshid rasulov")
+        bot.reply_to(message, "Iltimos, qo'shiq nomini yozing. Masalan: /mp3 Ummon")
         return
     msg = bot.reply_to(message, "🔍 Qidirilmoqda...")
     try:
@@ -54,4 +63,5 @@ def handle_ai(message):
     answer = get_gemini_response(message.text)
     bot.reply_to(message, answer)
 
+print("Bot ishga tushdi...")
 bot.polling()
