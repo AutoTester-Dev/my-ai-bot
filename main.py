@@ -10,16 +10,17 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 def get_gemini_response(prompt):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": prompt}]}]}
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text']
-    except:
-        return "AI xatosi."
-    return "Javob topilmadi."
+        else:
+            return f"API Xatosi: {response.status_code}"
+    except Exception as e:
+        return f"AI xatosi: {str(e)}"
 
 def download_music_by_query(query):
     ydl_opts = {
@@ -45,8 +46,8 @@ def handle_mp3(message):
             bot.send_audio(message.chat.id, audio)
         os.remove(file_path)
         bot.delete_message(message.chat.id, msg.message_id)
-    except:
-        bot.edit_message_text("❌ Xatolik yuz berdi.", message.chat.id, msg.message_id)
+    except Exception as e:
+        bot.edit_message_text(f"❌ Xatolik yuz berdi: {str(e)}", message.chat.id, msg.message_id)
 
 @bot.message_handler(func=lambda message: True)
 def handle_ai(message):
